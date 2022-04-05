@@ -37,6 +37,7 @@ files. To run, make sure to change the remote and local file directory arguments
 the client.
 
 Server requires arguments: ./server <Server Port>
+
 Client requires arguments: ./client <Server IP> <Server Port> <Remote Path> <Local Path>
 
 

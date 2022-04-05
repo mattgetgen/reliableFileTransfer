@@ -86,24 +86,24 @@ typedef struct connection {
     int socket_desc;
 } connection;
 
-int send_data(connection *connect, packet *packet, int line) {
+int send_data(connection *connect, Packet *packet, int line) {
     int return_value = (int)sendto(connect->socket_desc, packet, get_packet_size(packet), 0, (struct sockaddr *)connect->remote_addr, connect->addr_len);
     if (return_value == -1) print_error(strerror(errno), line);
     else                    print_packet(packet, 1, IS_SERVER);
     return return_value;
 }
 
-int recv_data(connection *connect, packet *packet) {
-    return (int)recvfrom(connect->socket_desc, packet, sizeof(struct packet), 0, (struct sockaddr *)connect->remote_addr, &connect->addr_len);
+int recv_data(connection *connect, Packet *packet) {
+    return (int)recvfrom(connect->socket_desc, packet, sizeof(Packet), 0, (struct sockaddr *)connect->remote_addr, &connect->addr_len);
 }
 
-int send_acknowledgement(connection *connect, packet *ack_packet, u_int ack_num) {
+int send_acknowledgement(connection *connect, Packet *ack_packet, u_int ack_num) {
     // for acknowledgement:       2 is ACK packet
     set_packet_header(ack_packet, 2, 0, ack_num, 100, sizeof(packet_header));
     return send_data(connect, ack_packet, __LINE__);
 }
 
-int wait_for_acknowledgement(connection *connect, packet *send_packet, packet *recv_packet, int i) {
+int wait_for_acknowledgement(connection *connect, Packet *send_packet, Packet *recv_packet, int i) {
     int return_value;
     u_int seq_num, ack_num;
     seq_num = send_packet->header.seq_num;
@@ -141,7 +141,7 @@ int wait_for_acknowledgement(connection *connect, packet *send_packet, packet *r
     }
 }
 
-int send_finale_packet(connection *connect, packet *send_packet, packet *recv_packet, u_int seq_num) {
+int send_finale_packet(connection *connect, Packet *send_packet, Packet *recv_packet, u_int seq_num) {
     int return_value;
     // for finale packet:          3 is FIN packet
     set_packet_header(send_packet, 3, 0, seq_num, 100, sizeof(packet_header));
@@ -152,7 +152,7 @@ int send_finale_packet(connection *connect, packet *send_packet, packet *recv_pa
 }
 
 // any result from this is to quit, so always return -1
-int send_error_packet(connection *connect, packet *send_packet, packet *recv_packet, u_int error_num) {
+int send_error_packet(connection *connect, Packet *send_packet, Packet *recv_packet, u_int error_num) {
     // for error packet:           0 is ERR packet
     set_packet_header(send_packet, 0, error_num, 0, 100, sizeof(packet_header));
     send_data(connect, send_packet, __LINE__);
@@ -160,7 +160,7 @@ int send_error_packet(connection *connect, packet *send_packet, packet *recv_pac
     return -1;
 }
 
-int send_file(connection *connect, packet *send_packet, packet *recv_packet) {
+int send_file(connection *connect, Packet *send_packet, Packet *recv_packet) {
     int return_value;
     FILE *file;
     u_char c;
@@ -235,8 +235,8 @@ int handle_connection(int socket_desc, time_t *start) {
 
     connection connect;
 
-    packet send_packet = init_packet();
-    packet recv_packet = init_packet();
+    Packet send_packet = init_packet();
+    Packet recv_packet = init_packet();
 
     // set connection data
     connect.remote_addr = &remote_addr;

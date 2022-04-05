@@ -61,60 +61,60 @@ typedef struct packet_header {
     u_int seq_num;
 } packet_header;
 
-typedef struct packet {
+typedef struct Packet {
     packet_header header;
     u_char buff[MAX_BUFFER_SIZE];
-} packet;
+} Packet;
 
 /**
  * Initialize the values stored in a packet
  */
-packet init_packet(void);
+Packet init_packet(void);
 
 /**
  * Set the values stored in a packet header.
  */
-void set_packet_header(packet *packet, u_int type, u_int error, u_int seq_num, u_int percent, u_short data_size);
+void set_packet_header(Packet *packet, u_int type, u_int error, u_int seq_num, u_int percent, u_short data_size);
 
 /**
  * Returns the type number stored in the packet.
  */
-u_int get_packet_type(packet *packet);
+u_int get_packet_type(Packet *packet);
 
 /**
  * Returns the error number stored in the packet.
  */
-u_int get_packet_error(packet *packet);
+u_int get_packet_error(Packet *packet);
 
 /**
  * Returns the full packet size of a packet.
  */
-u_short get_packet_size(packet *packet);
+u_short get_packet_size(Packet *packet);
 
 /**
  * Returns true if the packet is an error packet.
  */
-int is_packet_error(packet *packet);
+int is_packet_error(Packet *packet);
 
 /**
  * Returns true if the packet is a sequence packet.
  */
-int is_packet_sequence(packet *packet);
+int is_packet_sequence(Packet *packet);
 
 /**
  * Returns true if the packet is an acknowledgement packet.
  */
-int is_packet_acknowledgement(packet *packet);
+int is_packet_acknowledgement(Packet *packet);
 
 /**
  * Return true if the packet is a finale packet.
  */
-int is_packet_finale(packet *packet);
+int is_packet_finale(Packet *packet);
 
 /**
  * Prints packet information to the console.
  */
-void print_packet(packet *packet, int isSend, int isServer);
+void print_packet(Packet *packet, int isSend, int isServer);
 
 /**
  * Prints errors to the console.
@@ -124,6 +124,6 @@ void print_error(char *err, int line);
 /**
  * Prints specific error messages to the console.
  */
-void print_error_msg(packet *packet, int line);
+void print_error_msg(Packet *packet, int line);
 
 #endif

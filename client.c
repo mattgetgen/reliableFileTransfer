@@ -71,7 +71,7 @@ typedef struct connection {
 } connection;
 
 // send the packet and information. Can print the packet being sent, because it has already been parsed
-int send_data(connection *connect, packet *packet, int line) {
+int send_data(connection *connect, Packet *packet, int line) {
     int return_value =  (int)sendto(connect->socket_desc, packet, get_packet_size(packet), 0, connect->p->ai_addr, connect->p->ai_addrlen);
     if (return_value == -1) print_error(strerror(errno), line);
     else                    print_packet(packet, 1, IS_SERVER);
@@ -79,17 +79,17 @@ int send_data(connection *connect, packet *packet, int line) {
 }
 
 // received the packet and information. Cannot print the packet that was received, because it has not already been parsed
-int recv_data(connection *connect, packet *packet) {
-    return (int)recvfrom(connect->socket_desc, packet, sizeof(struct packet), 0, connect->p->ai_addr, &connect->p->ai_addrlen);
+int recv_data(connection *connect, Packet *packet) {
+    return (int)recvfrom(connect->socket_desc, packet, sizeof(Packet), 0, connect->p->ai_addr, &connect->p->ai_addrlen);
 }
 
-int send_acknowledgement(connection *connect, packet *ack_packet, u_int ack_num) {
+int send_acknowledgement(connection *connect, Packet *ack_packet, u_int ack_num) {
     // for acknowledgement:       2 is ACK packet
     set_packet_header(ack_packet, 2, 0, ack_num, 100, sizeof(packet_header));
     return send_data(connect, ack_packet, __LINE__);
 }
 
-int wait_for_acknowledgement(connection *connect, packet *send_packet, packet *recv_packet, int i) {
+int wait_for_acknowledgement(connection *connect, Packet *send_packet, Packet *recv_packet, int i) {
     int return_value;
     u_int seq_num, ack_num;
     seq_num = send_packet->header.seq_num;
@@ -133,8 +133,8 @@ int handle_connection(connection *connect, char *remote_file, char *local_file) 
     u_int seq_num = 1, temp;
     u_short recv_size;
 
-    packet send_packet = init_packet();
-    packet recv_packet = init_packet();
+    Packet send_packet = init_packet();
+    Packet recv_packet = init_packet();
 
     // for inital request           1 is SEQ packet
     set_packet_header(&send_packet, 1, 0, seq_num, 100, strlen(remote_file));

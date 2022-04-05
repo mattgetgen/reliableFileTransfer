@@ -7,8 +7,8 @@
  */
 #include "packet.h"
 
-packet init_packet(void) {
-    packet new_packet;
+Packet init_packet(void) {
+    Packet new_packet;
     new_packet.header.info = 0x00;
     new_packet.header.percent = 0x00;
     new_packet.header.data_size = 0;
@@ -17,7 +17,7 @@ packet init_packet(void) {
     return new_packet;
 }
 
-void set_packet_header(packet *packet, u_int type, u_int error, u_int seq_num, u_int percent, u_short data_size) {
+void set_packet_header(Packet *packet, u_int type, u_int error, u_int seq_num, u_int percent, u_short data_size) {
     u_char temp;
     temp = (u_char)((type << 6) & 0xC0);                          // 0xC0  is  1100 0000
     temp = temp | (u_char)((error << 4) & 0x30);                  // 0x30  is  0011 0000
@@ -29,35 +29,35 @@ void set_packet_header(packet *packet, u_int type, u_int error, u_int seq_num, u
     return;
 }
 
-u_int get_packet_type(packet *packet) {
+u_int get_packet_type(Packet *packet) {
     return (u_int) ( (packet->header.info & 0xC0) >> 6 );
 }                                        // 0xC0  is  1100 0000
 
-u_int get_packet_error(packet *packet) {
+u_int get_packet_error(Packet *packet) {
     return (u_int) ( (packet->header.info & 0x30) >> 4 );
 }                                        // 0x30  is  0011 0000
 
-u_short get_packet_size(packet *packet) {
+u_short get_packet_size(Packet *packet) {
     return (u_short) ( sizeof(packet_header) + packet->header.data_size );
 }
 
-int is_packet_error(packet *packet) {
+int is_packet_error(Packet *packet) {
     return ( get_packet_type(packet) == 0 );
 }
 
-int is_packet_sequence(packet *packet) {
+int is_packet_sequence(Packet *packet) {
     return ( get_packet_type(packet) == 1 );
 }
 
-int is_packet_acknowledgement(packet *packet) {
+int is_packet_acknowledgement(Packet *packet) {
     return ( get_packet_type(packet) == 2 );
 }
 
-int is_packet_finale(packet *packet) {
+int is_packet_finale(Packet *packet) {
     return ( get_packet_type(packet) == 3 );
 }
 
-void print_packet(packet *packet, int isSend, int isServer) {
+void print_packet(Packet *packet, int isSend, int isServer) {
     char *packet_type;
     char *arrow_dir;
     u_int type = get_packet_type(packet);
@@ -79,7 +79,7 @@ void print_error(char *err, int line) {
     return;
 }
 
-void print_error_msg(packet *packet, int line) {
+void print_error_msg(Packet *packet, int line) {
     int error = get_packet_error(packet);
     if      (error == 1) print_error("Bad Request!", line);
     else if (error == 2) print_error("file Not Found!", line);
