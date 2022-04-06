@@ -18,52 +18,6 @@
  * specific header and values.
  */
 
-/*
- * send_acknowledgement():
- *      make ACK packet with ACK num from SEQ num;
- *      send packet to server;
- *
- * wait_for_acknowledgement(i):
- *      if tried less than 8 times:
- *          wait to receive packet;
- *          if haven't received acknowledgement within 2 seconds:
- *              resend data;
- *              wait for acknowledgement(i+1);
- *          else:
- *              if incorrect response:
- *                  resend data;
- *                  wait_for_acknowledgement(i+1);
- *              else:
- *                  return;
- *
- * handle_connection():
- *      pack_packet();
- *      send packet and file request;
- *      wait_for_acknowledgement(1);
- * 
- *      open/make local file
- *      while packet received is not fin packet and wait for less than 8 times:
- *          receive data;
- *          if packet is SEQ packet:
- *              if seq_num == next:
- *                  read data;
- *                  write data into local file;
- *              send_acknowledgement;
- *          else 
- *              close file;
- *              if packet is ERR packet:
- *                  print error and return;
- *              else if packet is FIN packet:
- *                  print finished statement and return;
- *              send_acknowledgement;
- *      return;
- * 
- *
- * main():
- *      open socket;
- *      handle_connection();
- */
-
 // struct for storing connection and message data
 typedef struct connection {
     struct addrinfo *p;
@@ -72,10 +26,10 @@ typedef struct connection {
 
 // send the packet and information. Can print the packet being sent, because it has already been parsed
 int send_data(connection *connect, Packet *packet, int line) {
-    int return_value =  (int)sendto(connect->socket_desc, packet, get_packet_size(packet), 0, connect->p->ai_addr, connect->p->ai_addrlen);
-    if (return_value == -1) print_error(strerror(errno), line);
+    int rv =  (int)sendto(connect->socket_desc, packet, get_packet_size(packet), 0, connect->p->ai_addr, connect->p->ai_addrlen);
+    if (rv == -1) print_error(strerror(errno), line);
     else                    print_packet(packet, 1, IS_SERVER);
-    return return_value;
+    return rv;
 }
 
 // received the packet and information. Cannot print the packet that was received, because it has not already been parsed
@@ -90,17 +44,17 @@ int send_acknowledgement(connection *connect, Packet *ack_packet, u_int ack_num)
 }
 
 int wait_for_acknowledgement(connection *connect, Packet *send_packet, Packet *recv_packet, int i) {
-    int return_value;
+    int rv;
     u_int seq_num, ack_num;
     seq_num = send_packet->header.seq_num;
 
     if (i < MAX_RETRIES) {  // if tried less than 8 times, wait to receive data
 
-        return_value = recv_data(connect, recv_packet);
-        if (return_value == -1) {   // if havent received data
+        rv = recv_data(connect, recv_packet);
+        if (rv == -1) {   // if havent received data
 
-            return_value = send_data(connect, send_packet, __LINE__); // resend data
-            if (return_value == -1) return return_value;
+            rv = send_data(connect, send_packet, __LINE__); // resend data
+            if (rv == -1) return rv;
 
             i = wait_for_acknowledgement(connect, send_packet, recv_packet, i+1);   // wait yet again
             if (i == -1) return i;
@@ -111,15 +65,15 @@ int wait_for_acknowledgement(connection *connect, Packet *send_packet, Packet *r
             ack_num = recv_packet->header.seq_num;
             if (!is_packet_acknowledgement(recv_packet) || ack_num != seq_num) {   // if not the correct response
 
-                return_value = send_data(connect, send_packet, __LINE__); // resend data
-                if (return_value == -1) return return_value;
+                rv = send_data(connect, send_packet, __LINE__); // resend data
+                if (rv == -1) return rv;
 
                 i = wait_for_acknowledgement(connect, send_packet, recv_packet, i+1);   // wait yet again
                 if (i == -1) return i;
             }
         }
         // is correct data, return
-        return return_value;
+        return rv;
 
     } else {    // more than maximum number of tries, return error
         print_error("Connection Closed.", __LINE__);
@@ -129,7 +83,7 @@ int wait_for_acknowledgement(connection *connect, Packet *send_packet, Packet *r
 
 int handle_connection(connection *connect, char *remote_file, char *local_file) {
     FILE *file;
-    int return_value, i = 0;
+    int rv, i = 0;
     u_int seq_num = 1, temp;
     u_short recv_size;
 
@@ -141,13 +95,13 @@ int handle_connection(connection *connect, char *remote_file, char *local_file) 
     memcpy(send_packet.buff, remote_file, strlen(remote_file));
     
     // send request header
-    return_value = send_data(connect, &send_packet, __LINE__);
-    if (return_value == -1) return return_value;
+    rv = send_data(connect, &send_packet, __LINE__);
+    if (rv == -1) return rv;
     
     // wait for acknowledgement
-    return_value = wait_for_acknowledgement(connect, &send_packet, &recv_packet, 1);
-    if (return_value == -1) {
-        return return_value;
+    rv = wait_for_acknowledgement(connect, &send_packet, &recv_packet, 1);
+    if (rv == -1) {
+        return rv;
     }
     
     // open local file
@@ -157,9 +111,9 @@ int handle_connection(connection *connect, char *remote_file, char *local_file) 
     }
 
     do {    // while is not a finale packet, and tried less than 8 times
-        return_value = recv_data(connect, &recv_packet);
+        rv = recv_data(connect, &recv_packet);
         // didn't receive data
-        if (return_value == -1) {
+        if (rv == -1) {
             printf(".");
             fflush(stdout);
             i++;
@@ -182,16 +136,16 @@ int handle_connection(connection *connect, char *remote_file, char *local_file) 
                 }
 
                 // send acknowledgement, regardless if its next packet or previous packet
-                return_value = send_acknowledgement(connect, &send_packet, seq_num);
-                if (return_value == -1) return return_value;
+                rv = send_acknowledgement(connect, &send_packet, seq_num);
+                if (rv == -1) return rv;
 
             // not a sequence packet. Should either be an error or a finale
             } else {
                 fclose(file);
 
                 // send acknowledgement
-                return_value = send_acknowledgement(connect, &send_packet, temp);
-                if (return_value == -1) return return_value;
+                rv = send_acknowledgement(connect, &send_packet, temp);
+                if (rv == -1) return rv;
 
                 // if it is an error packet
                 if (is_packet_error(&recv_packet)) {
@@ -246,7 +200,8 @@ int handle_file_names(char *remote_buff, char *local_buff, char *remote_path, ch
 }
 
 int main(int argc, char *argv[]) {
-    int return_value;
+    int rv;
+
 	char *SERVER_IP, *SERVER_PORT, *REMOTE_PATH, *LOCAL_PATH;
     char remote_file[MAX_BUFFER_SIZE];
     char local_file[MAX_BUFFER_SIZE];
@@ -255,6 +210,7 @@ int main(int argc, char *argv[]) {
 
 	int socket_desc;
 	struct addrinfo hints, *servInfo, *p;
+    struct timeval tv;
 
     connection connect;
 	time_t start, end;
@@ -275,14 +231,13 @@ int main(int argc, char *argv[]) {
 	hints.ai_socktype = SOCK_DGRAM;     // UDP
 
 	// set timer
-    struct timeval tv;
     tv.tv_sec = 2;
     tv.tv_usec = 0;
 
-    return_value = getaddrinfo(SERVER_IP, SERVER_PORT, &hints, &servInfo);
-    if (return_value != 0) {
+    rv = getaddrinfo(SERVER_IP, SERVER_PORT, &hints, &servInfo);
+    if (rv != 0) {
         print_error("getaddrinfo failed.", __LINE__);
-        return return_value;
+        return rv;
     }
 
     for (p = servInfo; p != NULL; p = p->ai_next) {
@@ -299,15 +254,15 @@ int main(int argc, char *argv[]) {
         break;
     }
 
-    return_value = setsockopt(socket_desc, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *) &tv, sizeof(struct timeval));
-    if (return_value == -1 && p == NULL) {
+    rv = setsockopt(socket_desc, SOL_SOCKET, SO_RCVTIMEO,(struct timeval *) &tv, sizeof(struct timeval));
+    if (rv == -1 && p == NULL) {
         print_error(strerror(errno), __LINE__);
-        return return_value;
+        return rv;
     }
 
-    return_value = handle_file_names(remote_file, local_file, REMOTE_PATH, LOCAL_PATH);
-    if (return_value == -1) {
-        return return_value;
+    rv = handle_file_names(remote_file, local_file, REMOTE_PATH, LOCAL_PATH);
+    if (rv == -1) {
+        return rv;
     }
 
     freeaddrinfo(servInfo);
@@ -317,11 +272,11 @@ int main(int argc, char *argv[]) {
     connect.socket_desc = socket_desc;
 
     start = time(NULL);
-    return_value = handle_connection(&connect, remote_file, local_file);
+    rv = handle_connection(&connect, remote_file, local_file);
     end = time(NULL);
     printf("\nTime elapsed: %ld\n", end-start);
     close(socket_desc);
 
-    return return_value;
+    return rv;
 }
 

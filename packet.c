@@ -19,9 +19,9 @@ Packet init_packet(void) {
 
 void set_packet_header(Packet *packet, u_int type, u_int error, u_int seq_num, u_int percent, u_short data_size) {
     u_char temp;
-    temp = (u_char)((type << 6) & 0xC0);                          // 0xC0  is  1100 0000
-    temp = temp | (u_char)((error << 4) & 0x30);                  // 0x30  is  0011 0000
-    temp = temp | (u_char)(sizeof(struct packet_header) & 0x0F);  // 0x0F  is  0000 1111
+    temp =        (u_char) ( (type << 6)           & 0xC0 );    // 0xC0  is  1100 0000
+    temp = temp | (u_char) ( (error << 4)          & 0x30 );    // 0x30  is  0011 0000
+    temp = temp | (u_char) ( sizeof(packet_header) & 0x0F );    // 0x0F  is  0000 1111
     packet->header.info = temp;
     packet->header.percent = (u_char)percent;
     packet->header.seq_num = seq_num;
@@ -87,3 +87,4 @@ void print_error_msg(Packet *packet, int line) {
     else                 printf("\nNo Error Present.");
     return;
 }
+
